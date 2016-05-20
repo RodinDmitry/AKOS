@@ -29,7 +29,6 @@ pthread_t thread_msg;
 pthread_t thread_read;
 bool start_flag = false;
 int server_sockfd = 0;
-bool IsClient = false;
 
 void Server();
 void* get_msg(void* arg);
@@ -58,7 +57,7 @@ void setAbortHandler()
 void Server()
 {
 	printf("Server started\n");
-	IsClient = false;
+	bool have_client = false;
     struct sockaddr_in server_address;
     server_sockfd = socket(PF_INET, SOCK_STREAM, 0);
     server_address.sin_family = AF_INET;
@@ -75,10 +74,16 @@ void Server()
 	pthread_create(&thread_msg,NULL,get_msg,NULL);
 	pthread_create(&thread_read,NULL,msg_read,NULL);
 	sockfd = accept(server_sockfd, NULL, NULL);
+	have_client = true;
 	printf("Client joined\n");
 
     while(1)
     {
+    	if(!have_client)
+    	{
+    		sockfd = accept(server_sockfd, NULL, NULL);
+    		have_client = true;
+    	}
     	start_flag = true;
     	if(have_msg)
     	{
@@ -93,8 +98,6 @@ void Server()
 }
 void Client()
 {
-	printf("Client started\n");
-	IsClient = true;
 	struct hostent *hst;
 	struct sockaddr_in server_addr;
 	sockfd = socket(PF_INET, SOCK_STREAM, 0);
@@ -167,10 +170,7 @@ void* msg_read(void* arg)
 			if(temp == "Goodbye")
 			{
 				printf("Other disconnected\n");
-				if(IsClient)
-				{
 					end_flag = true;
-				}
 			}
 			delete[] buf;
 		}
