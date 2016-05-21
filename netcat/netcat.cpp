@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
         std::cout << " Wrong input format" << std::endl ;
         exit(-1);
     }
-    std::string command = GetAll();
+    std::string query = GetAll();
     int socketFd = -1;
     addrinfo* result = 0;
     int errCode = getaddrinfo(argv[1],argv[2],NULL,&result);
@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
             break;
     }
     freeaddrinfo(result);
-    write(socketFd,command.c_str(),command.size());
+    write(socketFd,query.c_str(),query.size());
     int nread = 0;
     while( (nread = recv(socketFd,msg,BUFSIZE,MSG_WAITALL)) > 0)
     {
