@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <cstdio>
 #include <vector>
@@ -27,23 +28,26 @@ void make_tree(int vertex, string name, int tabs = 0)
 
 int main()
 {
-	char temp[100];  // имя файла
-	DIR* dir = opendir("/proc/"); // рабочая директория
-	struct dirent* cur; // текущая открытая директория
-	int pid = 0; // id процесса
-	int ppid = 0; // id родительского процесса
+	char temp[100];
+	DIR* dir = opendir("/proc/");
+	struct dirent* cur;
+	int pid = 0;
+	int ppid = 0;
 	char un;
+	int minroot = 10000000; // INF
 	while ( ( cur = readdir(dir) ) != NULL )
 	{
-	  if ( !isdigit ( cur->d_name[0] ) )
-		  continue; // обработка директорий, не отвечающих за процессы
-	  string path = "/proc/" + string(cur->d_name) + "/stat"; // путь к информационному файлу
+	if ( !isdigit ( cur->d_name[0] ) )
+			continue;
+	  string path = "/proc/" + string(cur->d_name) + "/stat";
 	  FILE* file = fopen(path.c_str(),"r"); 
 	  if ( file == NULL )
 	  {
 		  fclose(file);
 		  continue;
 	  }
+	  if(ppid < minroot)
+		 minroot = ppid;
 	  fscanf(file, "%d %s %c %d", &pid, temp, &un, &ppid);
 	  string pname = string(temp);
 	  pname = pname.substr(1,pname.length()-2);// отбрасывание скобок у имени процесса
@@ -51,7 +55,7 @@ int main()
 	  fclose(file);
 	}
 
-	make_tree(0, "", -1);
+	make_tree(minroot, "", -1);
 
 return 0;
 }
