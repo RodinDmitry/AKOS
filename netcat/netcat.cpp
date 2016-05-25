@@ -14,7 +14,7 @@
 const int BUFSIZE = 1024;
 
 char msg[BUFSIZE];
-
+int sock_fd;
 
 void CheckError( int errFlag )
 {
@@ -42,7 +42,6 @@ void CheckSocketError( int socketFd )
     }
 
 }
-
 std::string GetAll()
 {
     std::string result = "";
@@ -56,7 +55,34 @@ std::string GetAll()
     return result;
 }
 
+int Connect(char* host,char* port)
+{
+	int socketFd = -1;
+	addrinfo* result = 0;
+	int errCode = getaddrinfo(host,port,NULL,&result);
+	CheckAddrError(errCode);
+	for(addrinfo* temp = result; temp != NULL; temp = temp->ai_next)
+	{
+		socketFd = socket(temp->ai_family,temp->ai_socktype,temp->ai_protocol);
+		if(socketFd == -1)
+			continue;
+		if(connect(socketFd,temp->ai_addr,temp->ai_addrlen) != -1)
+			break;
+	}
+	freeaddrinfo(result);
+	return socketFd;
+}
 
+void* Server_query(void* arg)
+{
+	std::string query;
+	while(1)
+	{
+		std::getline(std::cin,query);
+		query += "\n";
+		write(sock_fd,query.c_str(),query.size());
+	}
+}
 int main(int argc, char* argv[])
 {
     if(argc != 3)
@@ -64,28 +90,21 @@ int main(int argc, char* argv[])
         std::cout << " Wrong input format" << std::endl ;
         exit(-1);
     }
-    std::string query = GetAll();
-    int socketFd = -1;
-    addrinfo* result = 0;
-    int errCode = getaddrinfo(argv[1],argv[2],NULL,&result);
-    CheckAddrError(errCode);
-    for(addrinfo* temp = result; temp != NULL; temp = temp->ai_next)
+   // std::string command = GetAll();
+    sock_fd = Connect(argv[1],argv[2]);
+    CheckSocketError(sock_fd);
+    pthread_t thread;
+    pthread_create(&thread,NULL,Server_query,NULL);
+    int len;
+    while ((len = recv(sock_fd, msg, BUFSIZE, 0)) > 0)
     {
-        socketFd = socket(temp->ai_family,temp->ai_socktype,temp->ai_protocol);
-        if(socketFd == -1)
-            continue;
-        if(connect(socketFd,temp->ai_addr,temp->ai_addrlen) != -1)
-            break;
+    	for (int i = 0; i < len; i++)
+    		putchar(msg[i]);
     }
-    freeaddrinfo(result);
-    write(socketFd,query.c_str(),query.size());
-    int nread = 0;
-    while( (nread = recv(socketFd,msg,BUFSIZE,MSG_WAITALL)) > 0)
-    {
-        for(int i = 0;i < nread; ++i)
-            putchar(msg[i]);
-    }
-
+    pthread_join(thread,NULL);
     return 0;
 
 }
+
+
+
